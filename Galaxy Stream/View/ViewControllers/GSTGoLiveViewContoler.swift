@@ -1,9 +1,10 @@
 //
-//  ViewController.swift
+//  GSTGoLiveViewContoler.swift
 //  Galaxy Stream
 //
-//  Created by Shashi Gupta on 10/04/25.
+//  Created by Shashi Gupta on 16/04/25.
 //
+
 
 import UIKit
 import AgoraRtcKit
@@ -14,13 +15,15 @@ class GSTGoLiveViewContoler: UIViewController {
     
     @IBOutlet weak var loadingLabel: UILabel!
     @IBOutlet weak var cancelButton: UIButton!
-    @IBOutlet weak var remoteView: UIView! // UI view for displaying the remote video stream
+//    @IBOutlet weak var remoteView: UIView! // UI view for displaying the remote video stream
     @IBOutlet weak var switchCameraButton: UIButton! // Button to switch between front and back cameras
     @IBOutlet weak var muteButton: UIButton! // Button to mute/unmute audio
     
     @IBOutlet weak var moreButton: UIButton!
     @IBOutlet weak var audienceCountLabel: UILabel! // Label to display audience count
     @IBOutlet weak var cameraToggleButton: UIButton!
+    
+    var role: AgoraClientRole?
     
     // Instance of the Agora RTC engine
     var agoraKit: AgoraRtcEngineKit!
@@ -45,7 +48,7 @@ class GSTGoLiveViewContoler: UIViewController {
         // Start the local video preview
         setupLocalVideo()
         // Join an Agora channel
-        joinChannel(token: GSTConstants.token, channelID: GSTConstants.channelName)
+        joinChannel(channelID: GSTConstants.channelName, role: self.role)
     }
     
     // Clean up resources when the view controller is deallocated
@@ -63,8 +66,8 @@ class GSTGoLiveViewContoler: UIViewController {
     
     // Sets up the UI layout for local and remote video views
     func setupUI() {
-        self.remoteView.isHidden = true
-        self.moreButton.isHidden = true
+//        self.remoteView.isHidden = true
+        showHideMoreButton()
         self.loadingLabel.isHidden = false
         
         // Configure the switch camera button
@@ -171,12 +174,12 @@ class GSTGoLiveViewContoler: UIViewController {
     }
     
     // Join the channel with specified options
-    func joinChannel(token: String, channelID: String) {
+    func joinChannel(channelID: String, role: AgoraClientRole?) {
         let options = AgoraRtcChannelMediaOptions()
         // In video calling, set the channel use-case to communication
         options.channelProfile = .liveBroadcasting
         // Set the user role as broadcaster (default is audience)
-        options.clientRoleType = .broadcaster
+        options.clientRoleType = role ?? .broadcaster
         // Publish audio captured by microphone
         options.publishMicrophoneTrack = true
         // Publish video captured by camera
@@ -188,9 +191,9 @@ class GSTGoLiveViewContoler: UIViewController {
         // If you set uid=0, the engine generates a uid internally; on success, it triggers didJoinChannel callback
         // Join the channel with a temporary token
         agoraKit.joinChannel(
-            byToken: token,
+            byToken: (role == .broadcaster) ? GSTConstants.hostToken : GSTConstants.AudienceToken1,
             channelId: channelID,
-            uid: 0,
+            uid: (role == .broadcaster) ? 0 : 1,
             mediaOptions: options
         )
     }
@@ -227,6 +230,10 @@ class GSTGoLiveViewContoler: UIViewController {
         moreButton.layer.cornerRadius = 20
         
         moreButton.tintColor = .white
+    }
+    
+    func showHideMoreButton() {
+        (role == .audience) ? (moreButton.isHidden = true) : (moreButton.isHidden = false)
     }
     
     func handelMoreUI() {
@@ -305,14 +312,14 @@ extension GSTGoLiveViewContoler: AgoraRtcEngineDelegate {
     func rtcEngine(_ engine: AgoraRtcEngineKit, didJoinChannel channel: String, withUid uid: UInt, elapsed: Int) {
         print("Successfully joined channel: \(channel) with UID: \(uid)")
         self.handelMoreUI()
-        self.moreButton.isHidden = false
+        showHideMoreButton()
         self.loadingLabel.isHidden = true
     }
     
     // Triggered when a remote user joins the channel
     func rtcEngine(_ engine: AgoraRtcEngineKit, didJoinedOfUid uid: UInt, elapsed: Int) {
-        self.remoteView.isHidden = false
-        setupRemoteVideo(uid: uid, view: remoteView)
+//        self.remoteView.isHidden = false
+        setupRemoteVideo(uid: uid, view: localView)
     }
     
     // Triggered when a remote user leaves the channel
@@ -324,7 +331,7 @@ extension GSTGoLiveViewContoler: AgoraRtcEngineDelegate {
         
         print("Remote user \(uid) left, total audience: \(audienceCount)")
         
-        self.remoteView.isHidden = true
+//        self.remoteView.isHidden = true
         setupRemoteVideo(uid: uid, view: nil)
     }
     
