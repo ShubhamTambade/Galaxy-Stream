@@ -16,19 +16,18 @@ class GSTHomeViewController: UIViewController {
     }
 
     @IBAction func broadcaster(_ sender: UIButton) {
-        
-        pushTheGoLiveController()
+        pushTheGoLiveController(role: .broadcaster)
     }
     
     @IBAction func Audience(_ sender: UIButton) {
-        pushTheGoLiveController()
+        pushTheGoLiveController(role: .audience)
     }
     
-    func pushTheGoLiveController() {
+    func pushTheGoLiveController(role:AgoraClientRole) {
         
-        if let vc = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "GSTGoLiveViewContoler") as? GSTGoLiveViewContoler {
-            self.navigationController?.pushViewController(vc, animated: true)
-        }
+        let vc = GSTGoLiveViewContoler(nibName: "GSTGoLiveViewContoler", bundle: nil)
+        vc.role = role
+        self.navigationController?.pushViewController(vc, animated: true)
     }
     
 }
